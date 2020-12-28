@@ -123,7 +123,7 @@ int main()
 
 	printf("[*] - Decrypted Plaintext: ");
 	print_buf(decrypted, PLAINTEXT_LEN);
-	test
+
 	printf("====================================\n");
 	printf("[*] - Test Vector: ");
 
