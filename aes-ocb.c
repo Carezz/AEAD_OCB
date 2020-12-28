@@ -1,13 +1,5 @@
 #include "aes-ocb.h"
 
-void print_buf(uint8_t* buf, size_t len)
-{
-	for (size_t i = 0; i < len; i++)
-		printf("%02X ", buf[i]);
-
-	printf("\n\n");
-}
-
 static void xor16(uint8_t* out, uint8_t* in1, uint8_t* in2)
 {
 	for (size_t i = 0; i < 16; i++)

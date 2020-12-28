@@ -3,6 +3,14 @@
 
 #include "aes-ocb.h"
 
+void print_buf(uint8_t* buf, size_t len)
+{
+	for (size_t i = 0; i < len; i++)
+		printf("%02X ", buf[i]);
+
+	printf("\n\n");
+}
+
 void hex2bin(uint8_t* bytes, const uint8_t* hex_str, const size_t len)
 {
 	size_t pos = 0;
