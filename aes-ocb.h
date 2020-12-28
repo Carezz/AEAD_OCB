@@ -1,0 +1,54 @@
+#ifndef H_AES_OCB_H
+#define H_AES_OCB_H
+
+#include<string.h>
+#include<stdint.h>
+#include<stdlib.h>
+#include<stdio.h>
+
+#include "aes/aes.h"
+
+void print_buf(uint8_t* buf, size_t len);
+
+#define TAGLEN_BITS 128
+#define TAGLEN TAGLEN_BITS / 8
+
+#define OCB_ENC 1
+#define OCB_DEC 0
+
+/* Error codes. */
+#define OCB_OK 1 // Operation succeeded successfully.
+#define OCB_TAG_OK 2 // Tag verification succeeded successfully.
+
+#define OCB_ERR_INVALID_CTX -1 // NULL or invalid ctx parameter.
+#define OCB_ERR_INVALID_MODE -2 // Invalid crypt mode supplied. (Must be either OCB_ENC or OCB_DEC)
+#define OCB_ERR_INVALID_KEY -3 // NULL or invalid key parameter.
+#define OCB_ERR_INVALID_KEY_BITS -4 // Invalid number of key bits supplied. (can be 128, 192 or 256 only)
+#define OCB_ERR_INVALID_TAG_PARAM -5 // NULL tag buffer supplied.
+#define OCB_ERR_INVALID_AD_PARAM -6 // NULL additional data buffer or 0 AD len parameter supplied.
+#define OCB_ERR_CRYPT_SETKEY_FAIL -7 // The underlying block cipher's set key operation failed.
+#define OCB_ERR_CRYPT_FAIL -8 // The underlying block cipher's crypt operation failed.
+#define OCB_ERR_NONCE_FAIL -9 // The nonce generation failed.
+#define OCB_ERR_AAD_HASH_FAIL -10 // AAD Hash operation failed.
+#define OCB_ERR_TAG_FAIL -11 // Verification failed of the supplied tag failed.
+#define OCB_ERR_ALLOC_FAIL - 12 // Memory allocation failed.
+
+
+typedef struct
+{
+	mbedtls_aes_context aes;
+	mbedtls_aes_context aes_dec;
+	uint8_t L_asterisk[16];
+	uint8_t L_dollar[16];
+}ocb_ctx;
+
+void ocb_init(ocb_ctx* ctx);
+void ocb_free(ocb_ctx* ctx);
+
+int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits);
+int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, uint8_t* L_off);
+
+int ocb_encrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* ciphertext, uint8_t* plaintext, size_t plen, uint8_t* ad, size_t ad_len);
+int ocb_decrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* plaintext, uint8_t* ciphertext, size_t clen, uint8_t* ad, size_t ad_len);
+
+#endif H_AES_OCB_H
