@@ -107,13 +107,13 @@ static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* n
 	uint8_t stretch[24] = { 0 };
     int bottom, shift, off;
 
-	full_nonce[0] = TAGLEN_BITS % 128 << 1;
+	full_nonce[0] = TAGLEN_BITS & 7 << 1; /* Modulo 128 and shift by 1, we make the first 7 bits the TAGLEN. */
 	full_nonce[15 - nlen] |= 1;
 	memcpy(full_nonce + 1 + (15 - nlen), nonce, nlen);
 
-	bottom = full_nonce[15] % 64;
-	shift = bottom % 8;
-	off = bottom / 8;
+	bottom = full_nonce[15] & 6; /* Modulo 64, we want the last 6 bits. */
+	shift = bottom & 4; /* Modulo 8, we align on byte boundary. */
+	off = bottom >> 4; /* Division by 8, offset to where the byte we aligned begins. */
 
 	full_nonce[15] &= 0xC0;
 
@@ -224,8 +224,8 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
 	uint8_t padding[16] = { 0 };
 	uint8_t tmp_block[16] = { 0 };
 
-	blocks = ad_len / 16;
-	partial = ad_len % 16;
+	blocks = ad_len >> 4; /* Division by 16, number of full 16-byte blocks. */
+	partial = ad_len % 16; /* The size of the last partial 16-byte block. */
 
 	off_cond = (L_off == NULL);
 
@@ -298,8 +298,8 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
 	uint8_t final_checksum[16] = { 0 };
 	uint8_t aad_tag[16] = { 0 };
 
-	blocks = plen / 16;
-	partial = plen % 16;
+	blocks = plen >> 4; /* Division by 16, number of full 16-byte blocks. */
+	partial = plen % 16; /* The size of the last partial 16-byte block. */
 
 	/* Allocate L_offsets and precompute the L_i's. */
 	L_offsets = offsets_alloc(blocks);
@@ -400,8 +400,8 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
 	uint8_t ctag[16] = { 0 };
 	uint8_t aad_tag[16] = { 0 };
 
-	blocks = (clen - TAGLEN) / 16;
-	partial = (clen - TAGLEN) % 16;
+	blocks = (clen - TAGLEN) >> 4; /* Division by 16, number of full 16-byte blocks. */
+	partial = (clen - TAGLEN) % 16; /* The size of the last partial 16-byte block. */
 
 	/* Allocate L_offsets and precompute the L_i's. */
 	L_offsets = offsets_alloc(blocks);

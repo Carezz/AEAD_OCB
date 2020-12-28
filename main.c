@@ -110,7 +110,7 @@ int main()
    
    res = ocb_encrypt(&ctx, ciphertext, nonce, NONCE_LEN, plaintext, PLAINTEXT_LEN, ad, AD_LEN);
    
-   int tagres = ocb_decrypt(&ctx, decrypted, nonce, sizeof(nonce), ciphertext, sizeof(ciphertext), ad, sizeof(ad));
+   int tagres = ocb_decrypt(&ctx, decrypted, nonce, NONCE_LEN, ciphertext, CIPHERTEXT_LEN, ad, AD_LEN);
    
    printf("[*] - Plaintext: ");
    print_buf(plaintext, PLAINTEXT_LEN);
