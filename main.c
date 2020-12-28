@@ -5,10 +5,10 @@
 
 void print_buf(uint8_t* buf, size_t len)
 {
-	for (size_t i = 0; i < len; i++)
-		printf("%02X ", buf[i]);
-
-	printf("\n\n");
+   for (size_t i = 0; i < len; i++)
+       printf("%02X ", buf[i]);
+   
+   printf("\n\n");
 }
 
 void hex2bin(uint8_t* bytes, const uint8_t* hex_str, const size_t len)
@@ -17,37 +17,37 @@ void hex2bin(uint8_t* bytes, const uint8_t* hex_str, const size_t len)
 
 	for (size_t i = 0; i < len / 2; i++, pos++)
 	{
-		uint8_t ch0 = hex_str[i + pos];
-		uint8_t ch1 = hex_str[i + 1 + pos];
-
-		if (ch0 >= '0' && ch0 <= '9')
-		{
-			ch0 -= '0';
-		}
-		else if (ch0 >= 'a' && ch0 <= 'f')
-		{
-			ch0 -= 'W';
-		} 
-		else if (ch0 >= 'A' && ch0 <= 'F')
-		{
-			ch0 -= '7';
-		}
-
-		if (ch1 >= '0' && ch1 <= '9')
-		{
-			ch1 -= '0';
-		}
-		else if (ch1 >= 'a' && ch1 <= 'f')
-		{
-			ch1 -= 'W';
-		}
-		else if (ch1 >= 'A' && ch1 <= 'F')
-		{
-			ch1 -= '7';
-		}
-
-		bytes[i] = ch0 << 4;
-		bytes[i] |= ch1;
+	    uint8_t ch0 = hex_str[i + pos];
+	    uint8_t ch1 = hex_str[i + 1 + pos];
+	    
+	    if (ch0 >= '0' && ch0 <= '9')
+	    {
+	        ch0 -= '0';
+	    }
+	    else if (ch0 >= 'a' && ch0 <= 'f')
+	    {
+	        ch0 -= 'W';
+	    } 
+	    else if (ch0 >= 'A' && ch0 <= 'F')
+	    {
+	        ch0 -= '7';
+	    }
+	    
+	    if (ch1 >= '0' && ch1 <= '9')
+	    {
+	        ch1 -= '0';
+	    }
+	    else if (ch1 >= 'a' && ch1 <= 'f')
+	    {
+	        ch1 -= 'W';
+	    }
+	    else if (ch1 >= 'A' && ch1 <= 'F')
+	    {
+	        ch1 -= '7';
+	    }
+	    
+	    bytes[i] = ch0 << 4;
+	    bytes[i] |= ch1;
 	}
 }
 
