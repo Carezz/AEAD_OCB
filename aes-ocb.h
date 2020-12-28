@@ -8,8 +8,6 @@
 
 #include "aes/aes.h"
 
-void print_buf(uint8_t* buf, size_t len);
-
 #define TAGLEN_BITS 128
 #define TAGLEN TAGLEN_BITS / 8
 
@@ -36,10 +34,10 @@ void print_buf(uint8_t* buf, size_t len);
 
 typedef struct
 {
-	mbedtls_aes_context aes;
-	mbedtls_aes_context aes_dec;
-	uint8_t L_asterisk[16];
-	uint8_t L_dollar[16];
+   mbedtls_aes_context aes;
+   mbedtls_aes_context aes_dec;
+   uint8_t L_asterisk[16];
+   uint8_t L_dollar[16];
 }ocb_ctx;
 
 void ocb_init(ocb_ctx* ctx);
@@ -48,7 +46,7 @@ void ocb_free(ocb_ctx* ctx);
 int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits);
 int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, uint8_t* L_off);
 
-int ocb_encrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* ciphertext, uint8_t* plaintext, size_t plen, uint8_t* ad, size_t ad_len);
-int ocb_decrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* plaintext, uint8_t* ciphertext, size_t clen, uint8_t* ad, size_t ad_len);
+int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const size_t nlen, const uint8_t* plaintext, const size_t plen, const uint8_t* ad, const size_t ad_len);
+int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const size_t nlen, const uint8_t* ciphertext, const size_t clen, const uint8_t* ad, const size_t ad_len);
 
 #endif H_AES_OCB_H

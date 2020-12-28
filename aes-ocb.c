@@ -53,16 +53,6 @@ static size_t ntz(size_t n)
 	return count;
 }
 
-static void offsets_free(uint8_t* offsets, size_t n)
-{
-	if (offsets == NULL)
-		return;
-	
-	/* Note: we use + 1 to allocate an additional L offset for the final partial block. */
-	
-	memset(offsets, 0, (n + 1) * 16);
-	free(offsets);
-}
 
 static uint8_t* offsets_alloc(size_t n)
 {
@@ -77,6 +67,18 @@ static uint8_t* offsets_alloc(size_t n)
 
 	return offsets;
 }
+
+static void offsets_free(uint8_t* offsets, size_t n)
+{
+	if (offsets == NULL)
+		return;
+
+	/* Note: we use + 1 to allocate an additional L offset for the final partial block. */
+
+	memset(offsets, 0, (n + 1) * 16);
+	free(offsets);
+}
+
 
 static int timesafe_cmp_tag(uint8_t* in1, uint8_t* in2, size_t len)
 {
@@ -101,7 +103,7 @@ static void precompute_L(uint8_t* L_offsets, ocb_ctx* ctx, int blocks)
 		ocb_double(L_offsets + 16*i, L_offsets + (i - 1) * 16);
 }
 
-static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, uint8_t* nonce, size_t nlen)
+static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* nonce, const size_t nlen)
 {
 	/* Setup the nonce: taglen (7 bits) | padding of 0's (120 - nlen)| 1 bit | nonce. */
 
@@ -289,7 +291,7 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
 }
 
 
-int ocb_encrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* ciphertext, uint8_t* plaintext, size_t plen, uint8_t* ad, size_t ad_len)
+int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const size_t nlen, const uint8_t* plaintext, const size_t plen, const uint8_t* ad, const size_t ad_len)
 {
 	size_t blocks, partial;
 	uint8_t* L_offsets;
@@ -390,7 +392,7 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* ciphertext, 
 	return OCB_OK;
 }
 
-int ocb_decrypt(ocb_ctx* ctx, uint8_t* nonce, size_t nlen, uint8_t* plaintext, uint8_t* ciphertext, size_t clen, uint8_t* ad, size_t ad_len)
+int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const size_t nlen, const uint8_t* ciphertext, const size_t clen, const uint8_t* ad, const size_t ad_len)
 {
 	size_t blocks, partial;
 	uint8_t* L_offsets;
