@@ -86,55 +86,55 @@ int cmp_values(uint8_t* val1, uint8_t* val2, size_t len)
 
 int main()
 {
-	ocb_ctx ctx;
-	int res;
+   ocb_ctx ctx;
+   int res;
 
-	uint8_t key[KEY_LEN];
-	uint8_t nonce[NONCE_LEN];
-	uint8_t ad[AD_LEN];
-
-	uint8_t plaintext[PLAINTEXT_LEN];
-	uint8_t ciphertext[CIPHERTEXT_LEN];
-	uint8_t exp_ciphertext[EXP_CIPHERTEXT_LEN];
-	uint8_t decrypted[PLAINTEXT_LEN];
-
-	hex2bin(key, KEY, KEY_STR_LEN);
-	hex2bin(nonce, NONCE, NONCE_STR_LEN);
-	hex2bin(ad, AD, AD_STR_LEN);
-
-	hex2bin(plaintext, PLAINTEXT, PLAINTEXT_STR_LEN);
-	hex2bin(exp_ciphertext, EXP_CIPHERTEXT, EXP_CIPHERTEXT_STR_LEN);
-
-	ocb_init(&ctx);
-	res = ocb_set_key(&ctx, key, KEY_BITS);
-
-	res = ocb_encrypt(&ctx, ciphertext, nonce, NONCE_LEN, plaintext, PLAINTEXT_LEN, ad, AD_LEN);
-
-    int tagres = ocb_decrypt(&ctx, decrypted, nonce, sizeof(nonce), ciphertext, sizeof(ciphertext), ad, sizeof(ad));
-
-	printf("[*] - Plaintext: ");
-	print_buf(plaintext, PLAINTEXT_LEN);
-
-	printf("[*] - Ciphertext: ");
-	print_buf(ciphertext, CIPHERTEXT_LEN);
-
-	printf("[*] - Expected Ciphertext: ");
-	print_buf(exp_ciphertext, EXP_CIPHERTEXT_LEN);
-
-	printf("[*] - Decrypted Plaintext: ");
-	print_buf(decrypted, PLAINTEXT_LEN);
-
-	printf("====================================\n");
-	printf("[*] - Test Vector: ");
-
-	if (cmp_values(ciphertext, exp_ciphertext, CIPHERTEXT_LEN) == 0)
-		printf("PASSED! [****]\n");
-	else
-		printf("FAILED! [!!!!]\n");
-
-	printf("====================================\n");
-
-	int r = getchar();
-	ocb_free(&ctx);
-	return 0;
+   uint8_t key[KEY_LEN];
+   uint8_t nonce[NONCE_LEN];
+   uint8_t ad[AD_LEN];
+   
+   uint8_t plaintext[PLAINTEXT_LEN];
+   uint8_t ciphertext[CIPHERTEXT_LEN];
+   uint8_t exp_ciphertext[EXP_CIPHERTEXT_LEN];
+   uint8_t decrypted[PLAINTEXT_LEN];
+   
+   hex2bin(key, KEY, KEY_STR_LEN);
+   hex2bin(nonce, NONCE, NONCE_STR_LEN);
+   hex2bin(ad, AD, AD_STR_LEN);
+   
+   hex2bin(plaintext, PLAINTEXT, PLAINTEXT_STR_LEN);
+   hex2bin(exp_ciphertext, EXP_CIPHERTEXT, EXP_CIPHERTEXT_STR_LEN);
+   
+   ocb_init(&ctx);
+   res = ocb_set_key(&ctx, key, KEY_BITS);
+   
+   res = ocb_encrypt(&ctx, ciphertext, nonce, NONCE_LEN, plaintext, PLAINTEXT_LEN, ad, AD_LEN);
+   
+   int tagres = ocb_decrypt(&ctx, decrypted, nonce, sizeof(nonce), ciphertext, sizeof(ciphertext), ad, sizeof(ad));
+   
+   printf("[*] - Plaintext: ");
+   print_buf(plaintext, PLAINTEXT_LEN);
+   
+   printf("[*] - Ciphertext: ");
+   print_buf(ciphertext, CIPHERTEXT_LEN);
+   
+   printf("[*] - Expected Ciphertext: ");
+   print_buf(exp_ciphertext, EXP_CIPHERTEXT_LEN);
+   
+   printf("[*] - Decrypted Plaintext: ");
+   print_buf(decrypted, PLAINTEXT_LEN);
+   
+   printf("====================================\n");
+   printf("[*] - Test Vector: ");
+   
+   if (cmp_values(ciphertext, exp_ciphertext, CIPHERTEXT_LEN) == 0)
+   	printf("PASSED! [****]\n");
+   else
+   	printf("FAILED! [!!!!]\n");
+   
+   printf("====================================\n");
+   
+   int r = getchar();
+   ocb_free(&ctx);
+   return 0;
 }
