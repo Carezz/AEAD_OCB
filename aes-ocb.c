@@ -165,6 +165,7 @@ void ocb_init(ocb_ctx* ctx)
 
 	memset(ctx, 0, sizeof(ocb_ctx));
 	mbedtls_aes_init(&ctx->aes);
+	mbedtls_aes_init(&ctx->aes_dec);
 }
 
 void ocb_free(ocb_ctx* ctx)
@@ -173,6 +174,7 @@ void ocb_free(ocb_ctx* ctx)
 		return;
 
 	mbedtls_aes_free(&ctx->aes);
+	mbedtls_aes_free(&ctx->aes_dec);
 	memset(ctx, 0, sizeof(ocb_ctx));
 }
 
