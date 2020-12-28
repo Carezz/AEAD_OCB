@@ -4,7 +4,6 @@
 #include<string.h>
 #include<stdint.h>
 #include<stdlib.h>
-#include<stdio.h>
 
 #include "aes/aes.h"
 
@@ -28,9 +27,8 @@
 #define OCB_ERR_CRYPT_FAIL -8 // The underlying block cipher's crypt operation failed.
 #define OCB_ERR_NONCE_FAIL -9 // The nonce generation failed.
 #define OCB_ERR_AAD_HASH_FAIL -10 // AAD Hash operation failed.
-#define OCB_ERR_TAG_FAIL -11 // Verification failed of the supplied tag failed.
+#define OCB_ERR_TAG_FAIL -11 // Verification failed of the supplied tag.
 #define OCB_ERR_ALLOC_FAIL - 12 // Memory allocation failed.
-
 
 typedef struct
 {

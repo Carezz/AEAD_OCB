@@ -61,10 +61,6 @@ static uint8_t* offsets_alloc(size_t n)
 	/* Note: we use + 1 to allocate an additional L offset for the final partial block. */
 
 	offsets = calloc(n + 1, 16);
-
-	if (offsets == NULL)
-		return NULL;
-
 	return offsets;
 }
 

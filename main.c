@@ -53,12 +53,12 @@ void hex2bin(uint8_t* bytes, const uint8_t* hex_str, const size_t len)
 
 int cmp_values(uint8_t* val1, uint8_t* val2, size_t len)
 {
-	size_t result = 0;
-
-	for (size_t i = 0; i < len; i++)
-		result |= val1[i] ^ val2[i];
-
-	return result;
+   size_t result = 0;
+   
+   for (size_t i = 0; i < len; i++)
+       result |= val1[i] ^ val2[i];
+   
+   return result;
 }
 
 #define KEY "000102030405060708090a0b0c0d0e0f"
