@@ -375,7 +375,7 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    	  
    	  xor16(checksum, checksum, ciphertext);
       
-   	  if (ocb_process_block(ciphertext, OCB_ENC, ctx, offset) != OCB_OK)
+   	  if (ocb_process_block(ciphertext, BLOCKCIPHER_ENC, ctx, offset) != OCB_OK)
    	  {
    	     offsets_free(L_offsets, blocks);
    	     return OCB_ERR_CRYPT_FAIL;
@@ -504,7 +504,7 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
       
    	  memcpy(plaintext, ciphertext + (i - 1) * 16, 16);
       
-   	  if (ocb_process_block(plaintext, OCB_DEC, ctx, offset) != OCB_OK)
+   	  if (ocb_process_block(plaintext, BLOCKCIPHER_DEC, ctx, offset) != OCB_OK)
    	  	  return OCB_ERR_CRYPT_FAIL;
       
    	  xor16(checksum, checksum, plaintext);

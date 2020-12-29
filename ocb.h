@@ -10,9 +10,6 @@
 #define TAGLEN_BITS 128
 #define TAGLEN TAGLEN_BITS / 8
 
-#define OCB_ENC 1
-#define OCB_DEC 0
-
 /* Error codes. */
 #define OCB_OK 1 // Operation succeeded successfully.
 #define OCB_TAG_OK 2 // Tag verification succeeded successfully.
