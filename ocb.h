@@ -38,13 +38,96 @@ typedef struct
    uint8_t L_dollar[16];
 }ocb_ctx;
 
+/* OCB context initialization routine.
+   Parameters:
+   - ocb_ctx: An OCB context.
+
+   Description:
+   Initializes and clears the OCB context, making it ready for use.
+*/
 void ocb_init(ocb_ctx* ctx);
+
+/* OCB context free routine.
+   Parameters:
+   - ocb_ctx: An OCB context.
+
+   Description:
+   Frees and clears the OCB context, making it ready for disposal.
+*/
 void ocb_free(ocb_ctx* ctx);
 
+
+/* OCB key setup routine.
+   Parameters:
+   - ocb_ctx: An OCB context.
+   - key: A cryptographic key.
+   - keybits: Cryptographic key's length in bits (only 3 possible values: 128, 192, 256).
+
+   Description:
+   Initializes and setups the underlying block cipher's key.
+*/
 int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits);
+
+/* OCB authenticated additional data (AAD) hash routine.
+   Parameters:
+   - ocb_ctx: An OCB context.
+   - tag: Output buffer for returning and storing the tag of the AAD.
+   - ad: the additional data itself.
+   - ad_len: length of the data in bytes.
+   - L_off: a buffer to allocated L_offsets. (Optional, used only internally within encrypt and decrypt routines!)
+
+   WARNING: if you plan to call this routine directly, pass NULL parameter to L_off.
+
+   Description:
+   Hashes additional data and produces a tag, thereby authenticating it.
+
+   Notes:
+   Use this only if you plan to just authenticate data without encrypting, if you plan to do both, please
+   use ocb_encrypt routine instead!
+*/
 int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, uint8_t* L_off);
 
+
+/* OCB encrypt routine.
+   Parameters:
+   - ocb_ctx: An OCB context.
+   - ciphertext: Output buffer for storing the ciphertext.
+   - nonce: Buffer holding the nonce.
+   - nlen: Length of the nonce in bytes.
+   - plaintext: An input buffer to the plaintext to encrypt.
+   - plen: Length of the plaintext in bytes.
+   - ad: additional data to be authenticated, but not encrypted. (Optional)
+   - ad_len: length of the additional data in bytes. (Optional)
+
+   WARNING: Ciphertext MUST BE ATLEAST plen + TAGLEN in size!
+
+   Description:
+   Encrypts the plaintext, authenticates the additional data (if any) and returns
+   the ciphertext and the TAG at the end of it inside ciphertext.
+
+   Notes:
+   Nonce's max length is 15 bytes, while 12 bytes are recommended!
+   The nonce can simply be a counter.
+*/
 int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const size_t nlen, const uint8_t* plaintext, const size_t plen, const uint8_t* ad, const size_t ad_len);
+
+/* OCB decrypt routine.
+   Parameters:
+   - ocb_ctx: An OCB context.
+   - plaintext: Output buffer for storing the plaintext.
+   - nonce: Buffer holding the nonce.
+   - nlen: Length of the nonce in bytes.
+   - ciphertext: An input buffer to the ciphertext to encrypt.
+   - clen: Length of the ciphertext in bytes.
+   - ad: additional data to be authenticated, but not encrypted. (Optional)
+   - ad_len: length of the additional data in bytes. (Optional)
+
+   WARNING: Plaintext MUST BE ATLEAST plen in size!
+
+   Description:
+   Decrypts the ciphertext, authenticates the additional data (if any) and returns
+   the plaintext inside the plaintext buffer.
+*/
 int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const size_t nlen, const uint8_t* ciphertext, const size_t clen, const uint8_t* ad, const size_t ad_len);
 
 #endif H_OCB_H

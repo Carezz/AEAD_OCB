@@ -92,7 +92,7 @@ int main()
    uint8_t key[KEY_LEN];
    uint8_t nonce[NONCE_LEN];
    uint8_t ad[AD_LEN];
-   
+  
    uint8_t plaintext[PLAINTEXT_LEN];
    uint8_t ciphertext[CIPHERTEXT_LEN];
    uint8_t exp_ciphertext[EXP_CIPHERTEXT_LEN];
@@ -128,9 +128,9 @@ int main()
    printf("[*] - Test Vector: ");
    
    if (cmp_values(ciphertext, exp_ciphertext, CIPHERTEXT_LEN) == 0)
-   	printf("PASSED! [****]\n");
+   	   printf("PASSED! [****]\n");
    else
-   	printf("FAILED! [!!!!]\n");
+   	   printf("FAILED! [!!!!]\n");
    
    printf("====================================\n");
    
