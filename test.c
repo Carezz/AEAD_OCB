@@ -1,7 +1,7 @@
 #include<stdio.h>
 #include<stdint.h>
 
-#include "aes-ocb.h"
+#include "ocb.h"
 
 void print_buf(uint8_t* buf, size_t len)
 {

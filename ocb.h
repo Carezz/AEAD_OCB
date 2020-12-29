@@ -1,11 +1,11 @@
-#ifndef H_AES_OCB_H
-#define H_AES_OCB_H
+#ifndef H_OCB_H
+#define H_OCB_H
 
 #include<string.h>
 #include<stdint.h>
 #include<stdlib.h>
 
-#include "aes/aes.h"
+#include "cipher/aes.h"
 
 #define TAGLEN_BITS 128
 #define TAGLEN TAGLEN_BITS / 8
@@ -50,4 +50,4 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
 int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const size_t nlen, const uint8_t* plaintext, const size_t plen, const uint8_t* ad, const size_t ad_len);
 int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const size_t nlen, const uint8_t* ciphertext, const size_t clen, const uint8_t* ad, const size_t ad_len);
 
-#endif H_AES_OCB_H
+#endif H_OCB_H

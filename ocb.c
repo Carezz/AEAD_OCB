@@ -1,4 +1,4 @@
-#include "aes-ocb.h"
+#include "ocb.h"
 
 static void xor16(uint8_t* out, uint8_t* in1, uint8_t* in2)
 {
