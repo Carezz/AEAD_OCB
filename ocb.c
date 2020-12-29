@@ -124,9 +124,6 @@ static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* n
     off = bottom >> 4; /* Division by 8, offset to where the byte we aligned begins. */
     
     full_nonce[15] &= 0xC0;
-    
-    /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, full_nonce, stretch) != 0)
-        return OCB_ERR_CRYPT_FAIL;*/
 
     if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, stretch, full_nonce) == BLOCKCIPHER_ERR)
         return OCB_ERR_CRYPT_FAIL;
@@ -142,28 +139,17 @@ static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* n
 
 static int ocb_process_block(uint8_t* block, int mode, ocb_ctx* ctx, uint8_t* offset)
 {
-   //int internal_mode;
-   //mbedtls_aes_context* aes;
    blockcipher_ctx* cipher_ctx;
    
    if (mode == BLOCKCIPHER_ENC)
-   {
-   	  //internal_mode = MBEDTLS_AES_ENCRYPT;
    	  cipher_ctx = &ctx->blockcipher_enc;
-   }
    else
-   {
-   	 // internal_mode = MBEDTLS_AES_DECRYPT;
        cipher_ctx = &ctx->blockcipher_dec;
-   }
    
    xor16(block, block, offset);
-   
-   /*if (mbedtls_aes_crypt_ecb(aes, internal_mode, block, block) != 0)
-   	   return OCB_ERR_CRYPT_FAIL;*/
 
-    if (blockcipher_crypt_block(cipher_ctx, mode, block, block) == BLOCKCIPHER_ERR)
-        return OCB_ERR_CRYPT_FAIL;
+   if (blockcipher_crypt_block(cipher_ctx, mode, block, block) == BLOCKCIPHER_ERR)
+       return OCB_ERR_CRYPT_FAIL;
    
    xor16(block, block, offset);
    
@@ -177,8 +163,6 @@ void ocb_init(ocb_ctx* ctx)
    	   return;
    
    memset(ctx, 0, sizeof(ocb_ctx));
-   /*mbedtls_aes_init(&ctx->aes);
-   mbedtls_aes_init(&ctx->aes_dec);*/
    blockcipher_init(&ctx->blockcipher_enc);
    blockcipher_init(&ctx->blockcipher_dec);
 }
@@ -188,8 +172,6 @@ void ocb_free(ocb_ctx* ctx)
     if (ctx == NULL)
         return;
     
-    /*mbedtls_aes_free(&ctx->aes);
-    mbedtls_aes_free(&ctx->aes_dec);*/
     blockcipher_free(&ctx->blockcipher_enc);
     blockcipher_free(&ctx->blockcipher_dec);
     secure_zeroize(ctx->L_asterisk, 16);
@@ -207,12 +189,6 @@ int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits)
    
    if (keybits != 128 && keybits != 192 && keybits != 256)
    	   return OCB_ERR_INVALID_KEY_BITS;
-   
-   /*if (mbedtls_aes_setkey_enc(&ctx->aes, key, keybits) != 0)
-   	   return OCB_ERR_CRYPT_SETKEY_FAIL;
-   
-   if (mbedtls_aes_setkey_dec(&ctx->aes_dec, key, keybits) != 0)
-   	   return OCB_ERR_CRYPT_SETKEY_FAIL;*/
 
    if (blockcipher_set_key(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, key, keybits) == BLOCKCIPHER_ERR)
        return OCB_ERR_CRYPT_SETKEY_FAIL;
@@ -221,9 +197,6 @@ int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits)
        return OCB_ERR_CRYPT_SETKEY_FAIL;
    
    memset(ctx->L_asterisk, 0, 16);
-   
-   /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, ctx->L_asterisk, ctx->L_asterisk) != 0)
-   	   return OCB_ERR_CRYPT_FAIL;*/
 
    if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, ctx->L_asterisk, ctx->L_asterisk) == BLOCKCIPHER_ERR)
        return OCB_ERR_CRYPT_FAIL;
@@ -282,11 +255,6 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
    	  
    	  xor16(tmp_block, tmp_block, offset);
    	  
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, tmp_block, tmp_block) != 0)
-   	  {
-   	  	  if (off_cond) offsets_free(L_offsets, blocks);
-   	  	  return OCB_ERR_CRYPT_FAIL;
-   	  }*/
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, tmp_block, tmp_block) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -305,11 +273,6 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
    	  
    	  xor16(padding, padding, final_offset);
    	  
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, padding, padding) != 0)
-   	  {
-   	  	  if (off_cond) offsets_free(L_offsets, blocks);
-   	  	  return OCB_ERR_CRYPT_FAIL;
-   	  }*/
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, padding, padding) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -387,12 +350,6 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    {
    	  xor16(final_offset, offset, ctx->L_asterisk);
       
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, final_offset, padding) != 0)
-   	  {
-   	  	 offsets_free(L_offsets, blocks);
-   	  	 return OCB_ERR_CRYPT_FAIL;
-   	  }*/
-
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, padding, final_offset) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -411,11 +368,6 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    	  xor16(final_checksum, final_checksum, final_offset);
    	  xor16(final_checksum, final_checksum, ctx->L_dollar);
       
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, final_checksum, final_checksum) != 0)
-   	  {
-   	  	 offsets_free(L_offsets, blocks);
-   	  	 return OCB_ERR_CRYPT_FAIL;
-   	  }*/
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -428,11 +380,6 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    	  xor16(final_checksum, checksum, offset);
    	  xor16(final_checksum, final_checksum, ctx->L_dollar);
       
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, final_checksum, final_checksum) != 0)
-   	  {
-   	  	 offsets_free(L_offsets, blocks);
-   	  	 return OCB_ERR_CRYPT_FAIL;
-   	  }*/
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -515,11 +462,6 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
    {
    	  xor16(final_offset, offset, ctx->L_asterisk);
       
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, final_offset, padding) != 0)
-   	  {
-   	  	 offsets_free(L_offsets, blocks);
-   	  	 return OCB_ERR_CRYPT_FAIL;
-   	  }*/
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, padding, final_offset) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -538,11 +480,6 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
    	  xor16(final_checksum, final_checksum, final_offset);
    	  xor16(final_checksum, final_checksum, ctx->L_dollar);
       
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, final_checksum, final_checksum) != 0)
-   	  {
-   	  	 offsets_free(L_offsets, blocks);
-   	  	 return OCB_ERR_CRYPT_FAIL;
-   	  }*/
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
@@ -553,12 +490,7 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
    {
    	  xor16(final_checksum, checksum, offset);
    	  xor16(final_checksum, final_checksum, ctx->L_dollar);
-      
-   	  /*if (mbedtls_aes_crypt_ecb(&ctx->aes, MBEDTLS_AES_ENCRYPT, final_checksum, final_checksum) != 0)
-   	  {
-   	  	 offsets_free(L_offsets, blocks);
-   	  	 return OCB_ERR_CRYPT_FAIL;
-   	  }*/
+
       if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
       {
           offsets_free(L_offsets, blocks);
