@@ -5,7 +5,7 @@
 #include<stdint.h>
 #include<stdlib.h>
 
-#include "cipher/aes.h"
+#include "blockcipher.h"
 
 #define TAGLEN_BITS 128
 #define TAGLEN TAGLEN_BITS / 8
@@ -35,8 +35,10 @@
 
 typedef struct
 {
-   mbedtls_aes_context aes;
-   mbedtls_aes_context aes_dec;
+   /*mbedtls_aes_context aes;
+   mbedtls_aes_context aes_dec;*/
+   blockcipher_ctx blockcipher_enc;
+   blockcipher_ctx blockcipher_dec;
    uint8_t L_asterisk[16];
    uint8_t L_dollar[16];
 }ocb_ctx;
