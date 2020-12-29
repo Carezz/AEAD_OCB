@@ -32,8 +32,6 @@
 
 typedef struct
 {
-   /*mbedtls_aes_context aes;
-   mbedtls_aes_context aes_dec;*/
    blockcipher_ctx blockcipher_enc;
    blockcipher_ctx blockcipher_dec;
    uint8_t L_asterisk[16];
