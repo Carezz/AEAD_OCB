@@ -297,6 +297,18 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
 
 int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const size_t nlen, const uint8_t* plaintext, const size_t plen, const uint8_t* ad, const size_t ad_len)
 {
+   if (ctx == NULL)
+       return OCB_ERR_INVALID_CTX;
+   
+   if (ciphertext == NULL)
+       return OCB_ERR_NO_OUT_BUF;
+   
+   if (nonce == NULL || nlen == 0)
+       return OCB_ERR_NO_NONCE;
+   
+   if (plaintext == NULL || plen == 0)
+       return OCB_ERR_NO_IN_BUF;
+   
    size_t blocks, partial;
    uint8_t* L_offsets;
    uint8_t offset[16] = { 0 };
@@ -398,6 +410,18 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
 
 int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const size_t nlen, const uint8_t* ciphertext, const size_t clen, const uint8_t* ad, const size_t ad_len)
 {
+   if (ctx == NULL)
+       return OCB_ERR_INVALID_CTX;
+   
+   if (plaintext == NULL)
+       return OCB_ERR_NO_OUT_BUF;
+   
+   if (nonce == NULL || nlen == 0)
+       return OCB_ERR_NO_NONCE;
+   
+   if (ciphertext == NULL || clen == 0)
+       return OCB_ERR_NO_IN_BUF;
+
    size_t blocks, partial;
    uint8_t* L_offsets;
    uint8_t offset[16] = { 0 };
@@ -493,7 +517,7 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
    
    /* Verify the tag we got is correct. */
    if (timesafe_cmp_tag(ctag, final_checksum, TAGLEN) != OCB_TAG_OK)
-   	   return OCB_ERR_TAG_FAIL;
+       return OCB_ERR_TAG_FAIL;
    
    offsets_free(L_offsets, blocks);
    return OCB_OK;

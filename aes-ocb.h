@@ -28,7 +28,10 @@
 #define OCB_ERR_NONCE_FAIL -9 // The nonce generation failed.
 #define OCB_ERR_AAD_HASH_FAIL -10 // AAD Hash operation failed.
 #define OCB_ERR_TAG_FAIL -11 // Verification failed of the supplied tag.
-#define OCB_ERR_ALLOC_FAIL - 12 // Memory allocation failed.
+#define OCB_ERR_ALLOC_FAIL -12 // Memory allocation failed.
+#define OCB_ERR_NO_OUT_BUF -13 // No output parameter supplied.
+#define OCB_ERR_NO_NONCE -14 // No nonce supplied.
+#define OCB_ERR_NO_IN_BUF -15 // No input parameter supplied.
 
 typedef struct
 {
