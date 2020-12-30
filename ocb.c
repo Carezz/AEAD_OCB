@@ -48,7 +48,7 @@ static size_t ntz(size_t n)
            break;
         
         count++;
-    } while (n >>= 2);
+    } while (n >>= 1);
     
     return count;
 }
