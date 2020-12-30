@@ -72,11 +72,11 @@ int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits);
    Parameters:
    - ocb_ctx: An OCB context.
    - tag: Output buffer for returning and storing the tag of the AAD.
-   - ad: the additional data itself.
-   - ad_len: length of the data in bytes.
-   - L_off: a buffer to allocated L_offsets. (Optional, used only internally within encrypt and decrypt routines!)
+   - ad: The additional data itself.
+   - ad_len: Length of the data in bytes.
+   - L_off: A buffer to allocated L_offsets. (Optional, used only internally within encrypt and decrypt routines!)
 
-   WARNING: if you plan to call this routine directly, pass NULL parameter to L_off.
+   WARNING: If you plan to call this routine directly, pass NULL parameter to L_off.
 
    Description:
    Hashes additional data and produces a tag, thereby authenticating it.
@@ -96,8 +96,8 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, 
    - nlen: Length of the nonce in bytes.
    - plaintext: An input buffer to the plaintext to encrypt.
    - plen: Length of the plaintext in bytes.
-   - ad: additional data to be authenticated, but not encrypted. (Optional)
-   - ad_len: length of the additional data in bytes. (Optional)
+   - ad: Additional data to be authenticated, but not encrypted. (Optional)
+   - ad_len: Length of the additional data in bytes. (Optional)
 
    WARNING: Ciphertext MUST BE ATLEAST plen + TAGLEN in size!
 
@@ -119,8 +119,8 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    - nlen: Length of the nonce in bytes.
    - ciphertext: An input buffer to the ciphertext to encrypt.
    - clen: Length of the ciphertext in bytes.
-   - ad: additional data to be authenticated, but not encrypted. (Optional)
-   - ad_len: length of the additional data in bytes. (Optional)
+   - ad: Additional data to be authenticated, but not encrypted. (Optional)
+   - ad_len: Length of the additional data in bytes. (Optional)
 
    WARNING: Plaintext MUST BE ATLEAST plen in size!
 
