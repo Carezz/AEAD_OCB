@@ -62,28 +62,6 @@ static void secure_zeroize(uint8_t* buf, size_t len)
         *p = 0;
 }
 
-static uint8_t* offsets_alloc(size_t n)
-{
-   uint8_t* offsets;
-   
-   /* Note: we use + 1 to allocate an additional L offset for the final partial block. */
-   
-   offsets = calloc(n + 1, 16);
-   return offsets;
-}
-
-static void offsets_free(uint8_t* offsets, size_t n)
-{
-   if (offsets == NULL)
-       return;
-   
-   /* Note: we use + 1 to allocate an additional L offset for the final partial block. */
-   
-   secure_zeroize(offsets, (n + 1) * 16);
-   free(offsets);
-}
-
-
 static int timesafe_cmp_tag(uint8_t* in1, uint8_t* in2, size_t len)
 {
     uint8_t result;
@@ -97,14 +75,6 @@ static int timesafe_cmp_tag(uint8_t* in1, uint8_t* in2, size_t len)
         return OCB_TAG_OK;
     
     return OCB_ERR_TAG_FAIL;
-}
-
-static void precompute_L(uint8_t* L_offsets, ocb_ctx* ctx, int blocks)
-{
-   ocb_double(L_offsets, ctx->L_dollar);
-   
-   for (int i = 1; i < blocks; i++)
-   	   ocb_double(L_offsets + BLOCK_SIZE*i, L_offsets + (i - 1) * BLOCK_SIZE);
 }
 
 static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* nonce, const size_t nlen)
