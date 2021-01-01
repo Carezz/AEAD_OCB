@@ -106,7 +106,7 @@ int main()
    hex2bin(exp_ciphertext, EXP_CIPHERTEXT, EXP_CIPHERTEXT_STR_LEN);
    
    ocb_init(&ctx);
-   res = ocb_set_key(&ctx, key, KEY_BITS);
+   res = ocb_set_key(&ctx, key, KEY_BITS, 0);
    
    res = ocb_encrypt(&ctx, ciphertext, nonce, NONCE_LEN, plaintext, PLAINTEXT_LEN, ad, AD_LEN);
    

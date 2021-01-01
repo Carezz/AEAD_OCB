@@ -10,6 +10,9 @@
 #define TAGLEN_BITS 128
 #define TAGLEN TAGLEN_BITS / 8
 
+#define BLOCK_SIZE 16
+#define MAX_MSG_LEN 4096 // Default max message length per call, used if max_len parameter is not specified.
+
 /* Error codes. */
 #define OCB_OK 1 // Operation succeeded successfully.
 #define OCB_TAG_OK 2 // Tag verification succeeded successfully.
@@ -29,13 +32,23 @@
 #define OCB_ERR_NO_OUT_BUF -13 // No output parameter supplied.
 #define OCB_ERR_NO_NONCE -14 // No nonce supplied.
 #define OCB_ERR_NO_IN_BUF -15 // No input parameter supplied.
+#define OCB_ERR_PLEN_EXCEEDED -16 // Plaintext length supplied in encrypt has exceeded the max message length specified.
+#define OCB_ERR_CLEN_EXCEEDED -17 /* Ciphertext length supplied in decrypt has exceeded the max message length specified 
+                                   (WARNING: the TAGLEN tag in ciphertext is excluded from this!). */
+#define OCB_ERR_ADLEN_EXCEEDED - 18 /* Additional data length supplied in the hash function (ocb_aad) has exceeded the
+                                       max message length specified. */
 
 typedef struct
 {
    blockcipher_ctx blockcipher_enc;
    blockcipher_ctx blockcipher_dec;
+   
    uint8_t L_asterisk[16];
    uint8_t L_dollar[16];
+
+   uint8_t* L_offsets;
+   size_t max_len;
+
 }ocb_ctx;
 
 /* OCB context initialization routine.
@@ -56,17 +69,17 @@ void ocb_init(ocb_ctx* ctx);
 */
 void ocb_free(ocb_ctx* ctx);
 
-
 /* OCB key setup routine.
    Parameters:
    - ocb_ctx: An OCB context.
    - key: A cryptographic key.
    - keybits: Cryptographic key's length in bits (only 3 possible values: 128, 192, 256).
+   - max_len: The maximum message length per single encrypt or decrypt call.
 
    Description:
    Initializes and setups the underlying block cipher's key.
 */
-int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits);
+int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits, size_t max_len);
 
 /* OCB authenticated additional data (AAD) hash routine.
    Parameters:
@@ -85,8 +98,7 @@ int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits);
    Use this only if you plan to just authenticate data without encrypting, if you plan to do both, please
    use ocb_encrypt routine instead!
 */
-int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len, uint8_t* L_off);
-
+int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len);
 
 /* OCB encrypt routine.
    Parameters:
