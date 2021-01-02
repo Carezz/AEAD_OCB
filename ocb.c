@@ -1,12 +1,12 @@
 #include "ocb.h"
 
-static void xor16(uint8_t* out, uint8_t* in1, uint8_t* in2)
+static void xorblock(uint8_t* out, uint8_t* in1, uint8_t* in2)
 {
-   for (size_t i = 0; i < 16; i++)
+   for (size_t i = 0; i < OCB_BLOCK_SIZE; i++)
        out[i] = in1[i] ^ in2[i];
 }
 
-static void ocb_double(uint8_t out[16], uint8_t in[16])
+static void ocb_double(uint8_t out[OCB_BLOCK_SIZE], uint8_t in[OCB_BLOCK_SIZE])
 {
     int bit;
     uint8_t t0, t1 = 0;
@@ -65,7 +65,6 @@ static void secure_zeroize(uint8_t* buf, size_t len)
 static int timesafe_cmp_tag(uint8_t* in1, uint8_t* in2, size_t len)
 {
     uint8_t result;
-    
     result = 0;
     
     for (size_t i = 0; i < len; i++)
@@ -81,7 +80,7 @@ static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* n
 {
     /* Setup the nonce: taglen (7 bits) | padding of 0's (120 - nlen)| 1 bit | nonce. */
     
-    uint8_t full_nonce[16] = { 0 };
+    uint8_t full_nonce[OCB_BLOCK_SIZE] = { 0 };
     uint8_t stretch[24] = { 0 };
     int bottom, shift, off;
     
@@ -93,9 +92,9 @@ static int get_offset_from_nonce(uint8_t* offset, ocb_ctx* ctx, const uint8_t* n
     shift = bottom & 4; /* Modulo 8, we align on byte boundary. */
     off = bottom >> 4; /* Division by 8, offset to where the byte we aligned begins. */
     
-    full_nonce[15] &= 0xC0;
+    full_nonce[15] &= 0xC0; // Clear the last 6 bits.
 
-    if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, stretch, full_nonce) == BLOCKCIPHER_ERR)
+    if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, stretch, full_nonce) == OCB_BLOCKCIPHER_ERR)
         return OCB_ERR_CRYPT_FAIL;
     
     for (size_t i = 0; i < 8; i++)
@@ -111,17 +110,17 @@ static int ocb_process_block(uint8_t* block, int mode, ocb_ctx* ctx, uint8_t* of
 {
    blockcipher_ctx* cipher_ctx;
    
-   if (mode == BLOCKCIPHER_ENC)
+   if (mode == OCB_BLOCKCIPHER_ENC)
    	  cipher_ctx = &ctx->blockcipher_enc;
    else
        cipher_ctx = &ctx->blockcipher_dec;
    
-   xor16(block, block, offset);
+   xorblock(block, block, offset);
 
-   if (blockcipher_crypt_block(cipher_ctx, mode, block, block) == BLOCKCIPHER_ERR)
+   if (ocb_blockcipher_crypt_block(cipher_ctx, mode, block, block) == OCB_BLOCKCIPHER_ERR)
        return OCB_ERR_CRYPT_FAIL;
    
-   xor16(block, block, offset);
+   xorblock(block, block, offset);
    
    return OCB_OK;
 }
@@ -133,8 +132,8 @@ void ocb_init(ocb_ctx* ctx)
    	   return;
    
    memset(ctx, 0, sizeof(ocb_ctx));
-   blockcipher_init(&ctx->blockcipher_enc);
-   blockcipher_init(&ctx->blockcipher_dec);
+   ocb_blockcipher_init(&ctx->blockcipher_enc);
+   ocb_blockcipher_init(&ctx->blockcipher_dec);
 }
 
 void ocb_free(ocb_ctx* ctx)
@@ -142,23 +141,25 @@ void ocb_free(ocb_ctx* ctx)
     if (ctx == NULL)
         return;
     
-    blockcipher_free(&ctx->blockcipher_enc);
-    blockcipher_free(&ctx->blockcipher_dec);
+    ocb_blockcipher_free(&ctx->blockcipher_enc);
+    ocb_blockcipher_free(&ctx->blockcipher_dec);
 
-    secure_zeroize(ctx->L_asterisk, BLOCK_SIZE);
-    secure_zeroize(ctx->L_dollar, BLOCK_SIZE);
+    secure_zeroize(ctx->L_asterisk, OCB_BLOCK_SIZE);
+    secure_zeroize(ctx->L_dollar, OCB_BLOCK_SIZE);
 
     if (ctx->L_offsets != NULL)
     {
-        secure_zeroize(ctx->L_offsets, BLOCK_SIZE);
+        secure_zeroize(ctx->L_offsets, OCB_BLOCK_SIZE);
         free(ctx->L_offsets);
         ctx->L_offsets = NULL;
     }
+
+    ctx->max_len = 0;
 }
 
 
 int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits, size_t max_len)
-{
+{ 
    if (ctx == NULL)
    	   return OCB_ERR_INVALID_CTX;
    
@@ -179,21 +180,21 @@ int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits, size_t max_
    blocks = max_len >> 4;
    partial = ((max_len & 15) != 0);
 
-   if (blockcipher_set_key(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, key, keybits) == BLOCKCIPHER_ERR)
+   if (ocb_blockcipher_set_key(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, key, keybits) == OCB_BLOCKCIPHER_ERR)
        return OCB_ERR_CRYPT_SETKEY_FAIL;
 
-   if (blockcipher_set_key(&ctx->blockcipher_dec, BLOCKCIPHER_DEC, key, keybits) == BLOCKCIPHER_ERR)
+   if (ocb_blockcipher_set_key(&ctx->blockcipher_dec, OCB_BLOCKCIPHER_DEC, key, keybits) == OCB_BLOCKCIPHER_ERR)
        return OCB_ERR_CRYPT_SETKEY_FAIL;
 
-   memset(ctx->L_asterisk, 0, 16);
+   memset(ctx->L_asterisk, 0, OCB_BLOCK_SIZE);
 
-   if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, ctx->L_asterisk, ctx->L_asterisk) == BLOCKCIPHER_ERR)
+   if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, ctx->L_asterisk, ctx->L_asterisk) == OCB_BLOCKCIPHER_ERR)
        return OCB_ERR_CRYPT_FAIL;
    
    ocb_double(ctx->L_dollar, ctx->L_asterisk);
 
    /* Allocate the needed memory to hold the offsets. */
-   ctx->L_offsets = malloc((blocks + partial) * BLOCK_SIZE);
+   ctx->L_offsets = malloc((blocks + partial) * OCB_BLOCK_SIZE);
 
    if (ctx->L_offsets == NULL)
        return OCB_ERR_ALLOC_FAIL;
@@ -205,7 +206,7 @@ int ocb_set_key(ocb_ctx* ctx, const uint8_t* key, const int keybits, size_t max_
 
    /* L_i's */
    for (int i = 1; i < blocks; i++)
-       ocb_double(ctx->L_offsets + BLOCK_SIZE * i, ctx->L_offsets + (i - 1) * BLOCK_SIZE);
+       ocb_double(ctx->L_offsets + OCB_BLOCK_SIZE * i, ctx->L_offsets + (i - 1) * OCB_BLOCK_SIZE);
    
    ctx->max_len = max_len;
    return OCB_OK;
@@ -219,18 +220,18 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len)
    if (tag == NULL)
    	   return OCB_ERR_INVALID_TAG_PARAM;
    
-   if (ad == NULL || ad_len == 0)
+   if (ad == NULL)
        return OCB_ERR_INVALID_AD_PARAM;
    
    if (ad_len > ctx->max_len)
        return OCB_ERR_ADLEN_EXCEEDED;
 
    size_t blocks, partial;
-   uint8_t sum[16] = { 0 };
-   uint8_t offset[16] = { 0 };
-   uint8_t final_offset[16] = { 0 };
-   uint8_t padding[16] = { 0 };
-   uint8_t tmp_block[16] = { 0 };
+   uint8_t sum[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t offset[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t final_offset[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t padding[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t tmp_block[OCB_BLOCK_SIZE] = { 0 };
    
    blocks = ad_len >> 4;  /* Division by 16, number of full 16-byte blocks. */
    partial = ad_len & 15; /* The size of the last partial 16-byte block. */
@@ -238,31 +239,31 @@ int ocb_aad(ocb_ctx* ctx, uint8_t* tag, const uint8_t* ad, const size_t ad_len)
    /* Auth full blocks. */
    for (size_t i = 1; i <= blocks; i++)
    {
-   	  xor16(offset, offset, ctx->L_offsets + 16*ntz(i));
+   	  xorblock(offset, offset, ctx->L_offsets + OCB_BLOCK_SIZE*ntz(i));
    	  
-   	  memcpy(tmp_block, ad + (i - 1) * 16, 16);
+   	  memcpy(tmp_block, ad + (i - 1) * OCB_BLOCK_SIZE, OCB_BLOCK_SIZE);
    	  
-   	  xor16(tmp_block, tmp_block, offset);
+   	  xorblock(tmp_block, tmp_block, offset);
    	  
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, tmp_block, tmp_block) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, tmp_block, tmp_block) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
    	  
-   	  xor16(sum, sum, tmp_block);
+   	  xorblock(sum, sum, tmp_block);
    }
    
    if (partial)
    {
-   	  xor16(final_offset, offset, ctx->L_asterisk);
+   	  xorblock(final_offset, offset, ctx->L_asterisk);
    	  
-   	  memcpy(padding, ad + (blocks * 16), partial);
+   	  memcpy(padding, ad + (blocks * OCB_BLOCK_SIZE), partial);
    	  padding[partial] |= 0x80;
    	  
-   	  xor16(padding, padding, final_offset);
+   	  xorblock(padding, padding, final_offset);
    	  
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, padding, padding) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, padding, padding) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
    	  
-   	  xor16(sum, sum, padding);
+   	  xorblock(sum, sum, padding);
    }
    
    /* tag must be atleast TAGLEN. */
@@ -282,19 +283,19 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    if (nonce == NULL || nlen == 0)
        return OCB_ERR_NO_NONCE;
    
-   if (plaintext == NULL || plen == 0)
+   if (plaintext == NULL)
        return OCB_ERR_NO_IN_BUF;
    
    if (plen > ctx->max_len)
        return OCB_ERR_PLEN_EXCEEDED;
 
    size_t blocks, partial;
-   uint8_t offset[16] = { 0 };
-   uint8_t final_offset[16] = { 0 };
-   uint8_t padding[16] = {0};
-   uint8_t checksum[16] = { 0 };
-   uint8_t final_checksum[16] = { 0 };
-   uint8_t aad_tag[16] = { 0 };
+   uint8_t offset[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t final_offset[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t padding[OCB_BLOCK_SIZE] = {0};
+   uint8_t checksum[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t final_checksum[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t aad_tag[TAGLEN] = { 0 };
    
    blocks = plen >> 4;  /* Division by 16, number of full 16-byte blocks. */
    partial = plen & 15; /* The size of the last partial 16-byte block. */
@@ -305,54 +306,54 @@ int ocb_encrypt(ocb_ctx* ctx, uint8_t* ciphertext, const uint8_t* nonce, const s
    /* Encrypt full blocks. */
    for (size_t i = 1; i <= blocks; i++)
    {
-   	  xor16(offset, offset, ctx->L_offsets + 16*ntz(i));
+   	  xorblock(offset, offset, ctx->L_offsets + OCB_BLOCK_SIZE*ntz(i));
       
-   	  memcpy(ciphertext, plaintext + (i - 1)*16, 16);
+   	  memcpy(ciphertext, plaintext + (i - 1) * OCB_BLOCK_SIZE, OCB_BLOCK_SIZE);
    	  
-   	  xor16(checksum, checksum, ciphertext);
+   	  xorblock(checksum, checksum, ciphertext);
       
-   	  if (ocb_process_block(ciphertext, BLOCKCIPHER_ENC, ctx, offset) != OCB_OK)
+   	  if (ocb_process_block(ciphertext, OCB_BLOCKCIPHER_ENC, ctx, offset) != OCB_OK)
    	     return OCB_ERR_CRYPT_FAIL;
    }
    
    /* Handle any partial final blocks. */
    if (partial)
    {
-   	  xor16(final_offset, offset, ctx->L_asterisk);
+   	  xorblock(final_offset, offset, ctx->L_asterisk);
       
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, padding, final_offset) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, padding, final_offset) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
       
    	  for(size_t i = 0; i < partial; i++)
-   	  	  padding[i] ^= (plaintext + blocks * 16)[i];
+   	  	  padding[i] ^= (plaintext + blocks * OCB_BLOCK_SIZE)[i];
       
-   	  memcpy(ciphertext + blocks * 16, padding, partial);
+   	  memcpy(ciphertext + blocks * OCB_BLOCK_SIZE, padding, partial);
       
-   	  memcpy(final_checksum, plaintext + blocks * 16, partial);
+   	  memcpy(final_checksum, plaintext + (blocks * OCB_BLOCK_SIZE), partial);
    	  final_checksum[partial] |= 0x80;
-   	  xor16(final_checksum, final_checksum, checksum);
+
+   	  xorblock(final_checksum, final_checksum, checksum);
+   	  xorblock(final_checksum, final_checksum, final_offset);
+   	  xorblock(final_checksum, final_checksum, ctx->L_dollar);
       
-   	  xor16(final_checksum, final_checksum, final_offset);
-   	  xor16(final_checksum, final_checksum, ctx->L_dollar);
-      
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, final_checksum, final_checksum) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
    }
    else
    {
-   	  xor16(final_checksum, checksum, offset);
-   	  xor16(final_checksum, final_checksum, ctx->L_dollar);
+   	  xorblock(final_checksum, checksum, offset);
+   	  xorblock(final_checksum, final_checksum, ctx->L_dollar);
       
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, final_checksum, final_checksum) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
    }
    
-   /* final_checksum holds the tag, we have to XOR it with HASH(K, A), in our case this is ocb_aad which gives us the additional data hash. */
+   /* final_checksum holds the tag, we have to XOR it with HASH(K, A), in our case this is ocb_aad which gives us the additional data tag. */
    
    if (ad != NULL && ad_len != 0 && ocb_aad(ctx, aad_tag, ad, ad_len) != OCB_OK)
    	 return OCB_ERR_AAD_HASH_FAIL;
    
-   xor16(final_checksum, final_checksum, aad_tag);
+   xorblock(final_checksum, final_checksum, aad_tag);
    
    /* We have to ensure ciphertext buffer can hold atleast plen + TAGLEN, so we could copy to ciphertext + plen safely. */
    memcpy(ciphertext + plen, final_checksum, TAGLEN);
@@ -377,13 +378,13 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
        return OCB_ERR_CLEN_EXCEEDED;
 
    size_t blocks, partial;
-   uint8_t offset[16] = { 0 };
-   uint8_t final_offset[16] = { 0 };
-   uint8_t padding[16] = { 0 };
-   uint8_t checksum[16] = { 0 };
-   uint8_t final_checksum[16] = { 0 };
-   uint8_t ctag[16] = { 0 };
-   uint8_t aad_tag[16] = { 0 };
+   uint8_t offset[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t final_offset[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t padding[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t checksum[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t final_checksum[OCB_BLOCK_SIZE] = { 0 };
+   uint8_t ctag[TAGLEN] = { 0 };
+   uint8_t aad_tag[TAGLEN] = { 0 };
    
    blocks = (clen - TAGLEN) >> 4;  /* Division by 16, number of full 16-byte blocks. */
    partial = (clen - TAGLEN) & 15; /* The size of the last partial 16-byte block. */
@@ -394,45 +395,45 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
    /* Decrypt full blocks. */
    for (size_t i = 1; i <= blocks; i++)
    {
-   	  xor16(offset, offset, ctx->L_offsets + 16*ntz(i));
+   	  xorblock(offset, offset, ctx->L_offsets + OCB_BLOCK_SIZE * ntz(i));
       
-   	  memcpy(plaintext, ciphertext + (i - 1) * 16, 16);
+   	  memcpy(plaintext, ciphertext + (i - 1) * OCB_BLOCK_SIZE, OCB_BLOCK_SIZE);
       
-   	  if (ocb_process_block(plaintext, BLOCKCIPHER_DEC, ctx, offset) != OCB_OK)
+   	  if (ocb_process_block(plaintext, OCB_BLOCKCIPHER_DEC, ctx, offset) != OCB_OK)
    	  	  return OCB_ERR_CRYPT_FAIL;
       
-   	  xor16(checksum, checksum, plaintext);
+   	  xorblock(checksum, checksum, plaintext);
    }
    
    /* Handle any partial final blocks. */
    if (partial)
    {
-   	  xor16(final_offset, offset, ctx->L_asterisk);
+   	  xorblock(final_offset, offset, ctx->L_asterisk);
       
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, padding, final_offset) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, padding, final_offset) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
       
    	  for (size_t i = 0; i < partial; i++)
-   	  	   padding[i] ^= (ciphertext + blocks * 16)[i];
+   	  	   padding[i] ^= (ciphertext + blocks * OCB_BLOCK_SIZE)[i];
       
-   	  memcpy(plaintext + blocks * 16, padding, partial);
+   	  memcpy(plaintext + blocks * OCB_BLOCK_SIZE, padding, partial);
       
-   	  memcpy(final_checksum, plaintext + blocks * 16, partial);
+   	  memcpy(final_checksum, plaintext + blocks * OCB_BLOCK_SIZE, partial);
    	  final_checksum[partial] |= 0x80;
-   	  xor16(final_checksum, final_checksum, checksum);
+
+   	  xorblock(final_checksum, final_checksum, checksum);
+   	  xorblock(final_checksum, final_checksum, final_offset);
+   	  xorblock(final_checksum, final_checksum, ctx->L_dollar);
       
-   	  xor16(final_checksum, final_checksum, final_offset);
-   	  xor16(final_checksum, final_checksum, ctx->L_dollar);
-      
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, final_checksum, final_checksum) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
    }
    else
    {
-   	  xor16(final_checksum, checksum, offset);
-   	  xor16(final_checksum, final_checksum, ctx->L_dollar);
+   	  xorblock(final_checksum, checksum, offset);
+   	  xorblock(final_checksum, final_checksum, ctx->L_dollar);
 
-      if (blockcipher_crypt_block(&ctx->blockcipher_enc, BLOCKCIPHER_ENC, final_checksum, final_checksum) == BLOCKCIPHER_ERR)
+      if (ocb_blockcipher_crypt_block(&ctx->blockcipher_enc, OCB_BLOCKCIPHER_ENC, final_checksum, final_checksum) == OCB_BLOCKCIPHER_ERR)
           return OCB_ERR_CRYPT_FAIL;
    }
    
@@ -441,9 +442,9 @@ int ocb_decrypt(ocb_ctx* ctx, uint8_t* plaintext, const uint8_t* nonce, const si
    if (ad != NULL && ad_len != 0 && ocb_aad(ctx, aad_tag, ad, ad_len) != OCB_OK)
    	  return OCB_ERR_AAD_HASH_FAIL;
    
-   xor16(final_checksum, final_checksum, aad_tag);
+   xorblock(final_checksum, final_checksum, aad_tag);
    
-   memcpy(ctag, ciphertext + blocks*16 + partial, TAGLEN);
+   memcpy(ctag, ciphertext + (blocks * OCB_BLOCK_SIZE) + partial, TAGLEN);
    
    /* Verify the tag we got is correct. */
    if (timesafe_cmp_tag(ctag, final_checksum, TAGLEN) != OCB_TAG_OK)

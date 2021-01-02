@@ -10,8 +10,7 @@
 #define TAGLEN_BITS 128
 #define TAGLEN TAGLEN_BITS / 8
 
-#define BLOCK_SIZE 16
-#define MAX_MSG_LEN 4096 // Default max message length per call, used if max_len parameter is not specified.
+#define MAX_MSG_LEN 4096 // Default max message length per call, it is used if max_len parameter is not specified.
 
 /* Error codes. */
 #define OCB_OK 1 // Operation succeeded successfully.
@@ -43,8 +42,8 @@ typedef struct
    blockcipher_ctx blockcipher_enc;
    blockcipher_ctx blockcipher_dec;
    
-   uint8_t L_asterisk[16];
-   uint8_t L_dollar[16];
+   uint8_t L_asterisk[OCB_BLOCK_SIZE];
+   uint8_t L_dollar[OCB_BLOCK_SIZE];
 
    uint8_t* L_offsets;
    size_t max_len;
